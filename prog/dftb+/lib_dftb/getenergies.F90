@@ -28,6 +28,7 @@ module dftbp_getenergies
   use dftbp_qdepextpotproxy, only : TQDepExtPotProxy
   use dftbp_onsitecorrection
   use dftbp_dispiface
+  use dftbp_loscorrection
 #:if WITH_MBD
   use dftbp_dispmbd, only: TDispMbd
 #:endif
@@ -48,7 +49,8 @@ contains
   subroutine calcEnergies(sccCalc, qOrb, q0, chargePerShell, species, tExtField, isXlbomd, dftbU,&
       & tDualSpinOrbit, rhoPrim, H0, orb, neighbourList, nNeighbourSK, img2CentCell, iSparseStart,&
       & cellVol, extPressure, TS, potential, energy, thirdOrd, solvation, rangeSep, reks,&
-      & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+      & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+      & iAtomStart, SSqrReal, HSqrReal, filling, LOs)
 
     !> SCC module internal variables
     type(TScc), allocatable, intent(in) :: sccCalc
@@ -150,6 +152,21 @@ contains
     !> Corrections terms for on-site elements
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
+    !> Start of atomic blocks in dense arrays
+    integer,  intent(in)  :: iAtomStart
+
+    !> square overlap matrix between basis functions, both triangles required
+    real(dp), intent(in)  :: SSqrReal(:,:)
+
+    !> dense real hamiltonian storage
+    real(dp), intent(in)  :: HSqrReal(:,:,:)
+
+    !> occupations (level, kpoint, spin)
+    real(dp), intent(in)  :: filling(:,:)
+
+    !> Coefficients of LOs (orbitallets) in the CO basis (LO index, CO index)
+    real(dp), intent(in)  :: LOs(:,:)
+
     integer :: nSpin
     real(dp) :: nEl(2)
 
@@ -203,6 +220,14 @@ contains
     if (allocated(onSiteElements)) then
       call getEons(energy%atomOnSite, qBlock, qiBlock, q0, onSiteElements, species, orb)
       energy%eOnSite = sum(energy%atomOnSite)
+    end if
+
+    if (allocated(LOs)) then
+      call getOrbitallets(LOs, eigen(:,1,1), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
+          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), coord0)
+      call getElosc(energy%atomLosc, nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
+          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), LOs)
+      energy%elosc = sum(energy%atomLosc)
     end if
 
     if (allocated(dftbU)) then
@@ -322,11 +347,12 @@ contains
     type(TEnergies), intent(inout) :: energy
 
     energy%Eelec = energy%EnonSCC + energy%ESCC + energy%Espin + energy%ELS + energy%Edftbu&
-        & + energy%Eext + energy%e3rd + energy%eOnSite + energy%ESolv + energy%Efock
+        & + energy%Eext + energy%e3rd + energy%eOnSite + energy%ESolv + energy%Efock&
+        & + energy%elosc
 
     energy%atomElec(:) = energy%atomNonSCC + energy%atomSCC + energy%atomSpin + energy%atomDftbu&
         & + energy%atomLS + energy%atomExt + energy%atom3rd + energy%atomOnSite &
-        & + energy%atomSolv
+        & + energy%atomSolv + energy%atomLosc
     energy%atomTotal(:) = energy%atomElec + energy%atomRep + energy%atomDisp + energy%atomHalogenX
     energy%Etotal = energy%Eelec + energy%Erep + energy%eDisp + energy%eHalogenX
     energy%EMermin = energy%Etotal - sum(energy%TS)

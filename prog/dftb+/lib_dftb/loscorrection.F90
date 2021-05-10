@@ -5,7 +5,7 @@
 !  See the LICENSE file for terms of usage and distribution.                                       !
 !--------------------------------------------------------------------------------------------------!
 
-module loscorrection
+module dftbp_loscorrection
 # include "assert.h"
 # include "allocate.h"
   use Accuracy
@@ -522,4 +522,4 @@ contains
   end subroutine getlambdaSqrQQ
 
 
-end module loscorrection
+end module dftbp_loscorrection

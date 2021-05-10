@@ -41,6 +41,7 @@ module dftbp_main
   use dftbp_getenergies, only : calcEnergies, calcRepulsiveEnergy, calcDispersionEnergy, sumEnergies
   use dftbp_sccinit
   use dftbp_onsitecorrection
+  use dftbp_loscorrection
   use dftbp_periodic
   use dftbp_mixer
   use dftbp_geoopt
@@ -7084,7 +7085,8 @@ contains
           & species, tExtField, isXlbomd, dftbU, tDualSpinOrbit, rhoPrim, H0, orb,&
           & neighbourList, nNeighbourSk, img2CentCell, iSparseStart, cellVol, extPressure, TS,&
           & potential, energy, thirdOrd, solvation, rangeSep, reks, qDepExtPot, qBlock, qiBlock,&
-          & xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+          & xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+          & denseDesc%iAtomStart, SSqrReal, HSqrReal, filling, LOs)
       call sumEnergies(energy)
 
       ! Assign energy contribution of each microstate
