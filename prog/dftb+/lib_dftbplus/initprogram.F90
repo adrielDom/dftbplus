@@ -68,6 +68,7 @@ module dftbp_initprogram
   use dftbp_onsitecorrection
   use dftbp_hamiltonian, only : TRefExtPot
   use dftbp_h5correction, only : TH5CorrectionInput
+  use dftbp_loscorrection, only: TLOSCorrection
   use dftbp_halogenx
   use dftbp_slakocont
   use dftbp_repcont
@@ -674,6 +675,9 @@ module dftbp_initprogram
 
     !> Correction to energy from on-site matrix elements
     real(dp), allocatable :: onSiteElements(:,:,:,:)
+
+    !> data structure for localised orbital scaling correction
+    type(TLOSCorrection), allocatable :: losc
 
     !> Correction to dipole momements on-site matrix elements
     real(dp), allocatable :: onSiteDipole(:,:)
@@ -1930,6 +1934,33 @@ contains
         this%conVec(:,ii) = this%conVec(:,ii) / sqrt(sum(this%conVec(:,ii)**2))
       end do
     end if
+
+    !LOSC
+    if (allocated(input%ctrl%losc)) then
+
+    #:for VAR, ERR in [("this%tSpinOrbit","spin orbit coupling"), &
+      & ("this%t3rd","third order"),&
+      & ("any(this%kPoint /= 0.0_dp)","non-gamma k-points"),&
+      & ("this%tFixEf", "a fixed Fermi level"), ("this%tPoisson", "use of the Poisson solver")]
+      if (${VAR}$) then
+        call error("LO scaling correction is not compatible with ${ERR}$")
+      end if
+    #:endfor
+    #:for VAR, ERR in [("tShellResolved","shell resolved hamiltonians"),&
+      & ("tDampH","H damping")]
+      if (input%ctrl%${VAR}$) then
+        call error("LO scaling correction is not compatible with ${ERR}$")
+      end if
+    #:endfor
+      if (allocated(input%ctrl%h5Input)) then
+        call error("LO scaling correction is not compatible with H5 correction")
+      end if
+    #:for VAR, ERR in [("this%solvation","solvation"), ("this%dftbU","DFTB+U/pSIC"),&
+      & ("this%onSiteElements","onsite corrections"), ("this%reks","REKS")]
+      if (allocated(${VAR}$)) then
+        call error("LO scaling correction is not compatible with ${ERR}$")
+      end if
+    #:endfor
 
     ! Dispersion
     tHHRepulsion = .false.

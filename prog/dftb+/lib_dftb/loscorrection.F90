@@ -17,6 +17,20 @@ module dftbp_loscorrection
   implicit none
   public
 
+  !> Data type for localised orbital scaling correction
+  type :: TLOSCorrection
+
+    !> energy penalty function
+    character :: penalty
+
+    !> parameters of penalty function
+    real(dp), allocatable :: PenaltyParam(:)
+
+    !> SCF-LOSC Calculation?
+    logical :: tSCF
+
+  end type TLOSCorrection
+
 contains
 
   !> Get the LOSC term of total energy

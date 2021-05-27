@@ -1581,6 +1581,29 @@ contains
       end do
     end if
 
+    ! LOSC
+    call getChildValue(node, "LocalizedOrbitalScalingCorrection", value1, "", child=child, &
+        &allowEmptyValue=.true., dummyValue=.true.)
+    if (associated(value1)) then
+      allocate(ctrl%losc)
+
+      call getChildValue(child, "PenaltyFunction", value2, "Yang2017", child=child)
+      call getNodeName(value2, buffer)
+      select case(char(buffer))
+
+      case ("Yang2017")
+
+        ctrl%losc%penalty = "Yang2017"
+        allocate(ctrl%losc%PenaltyParam(4))
+        call getChildValue(value2, "Radius", ctrl%losc%PenaltyParam(1), 5.1_dp)
+        call getChildValue(value2, "EnergyWindow", ctrl%losc%PenaltyParam(2), 0.092_dp)
+        call getChildValue(value2, "gamma", ctrl%losc%PenaltyParam(3), 2.0_dp)
+        call getChildValue(value2, "eta", ctrl%losc%PenaltyParam(4), 3.0_dp)
+
+
+      call getChildValue(child, "SelfConsistentCalculation", ctrl%losc%tSCF, default=.false.)
+    end if
+
     ! Dispersion
     call getChildValue(node, "Dispersion", value1, "", child=child, &
         &allowEmptyValue=.true., dummyValue=.true.)

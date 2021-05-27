@@ -16,6 +16,7 @@ module dftbp_inputdata
   use dftbp_message
   use dftbp_dftbplusu, only : TDftbUInp
   use dftbp_dispersions, only : TDispersionInp
+  use dftbp_loscorrection, only: TLOSCorrection
   use dftbp_linresp, only : TLinrespini
   use dftbp_pprpa, only : TppRPAcal
   use dftbp_slakocont
@@ -465,6 +466,10 @@ module dftbp_inputdata
     !> 3rd order
     real(dp), allocatable :: hubDerivs(:,:)
     logical :: t3rd, t3rdFull
+
+
+    !> Localized Orbital Scaling Correction
+    type(TLOSCorrection), allocatable :: losc
 
 
     !> XLBOMD
