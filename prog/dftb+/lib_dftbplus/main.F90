@@ -725,7 +725,7 @@ contains
             & this%rangeSep, this%nNeighbourLC, this%tDualSpinOrbit, this%xi, this %tExtField,&
             & this%isXlbomd, this%dftbU, this%dftbEnergy(1)%TS, this%qDepExtPot, this %qBlockOut,&
             & this%qiBlockOut, this%tFixEf, this%Ef, this%rhoPrim, this%onSiteElements, this%iHam,&
-            & this%dispersion, this%reks)
+            & this%dispersion, this%reks, this%SSqrReal, this%HSqrReal, this%filling, this%LOSC)
         call optimizeFONsAndWeights(this%eigvecsReal, this%filling, this%dftbEnergy(1), this%reks)
 
         call getFockandDiag(env, this%denseDesc, this%neighbourList, this%nNeighbourSK,&
@@ -957,7 +957,8 @@ contains
             & this%dftbEnergy(this%deltaDftb%iDeterminant)%TS, this%potential,&
             & this%dftbEnergy(this%deltaDftb%iDeterminant), this%thirdOrd, this%solvation,&
             & this%rangeSep, this%reks, this%qDepExtPot, this%qBlockOut, this%qiBlockOut,&
-            & this%xi, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%onSiteElements)
+            & this%xi, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%onSiteElements,&
+            & this%denseDesc%iAtomStart, this%SSqrReal, this%HSqrReal, this%filling, this%LOSC)
 
         tStopScc = hasStopFile(fStopScc)
 
@@ -6829,7 +6830,8 @@ contains
       & nNeighbourSK, iSparseStart, img2CentCell, H0, over, spinW, cellVol, extPressure, &
       & energy, q0, iAtInCentralRegion, solvation, thirdOrd, potential, rangeSep, nNeighbourLC,&
       & tDualSpinOrbit, xi, tExtField, isXlbomd, dftbU, TS, qDepExtPot, qBlock, qiBlock,&
-      & tFixEf, Ef, rhoPrim, onSiteElements, iHam, dispersion, reks)
+      & tFixEf, Ef, rhoPrim, onSiteElements, iHam, dispersion, reks,&
+      & SSqrReal, HSqrReal, filling, LOSC)
 
     !> Environment settings
     type(TEnvironment), intent(inout) :: env
@@ -6945,6 +6947,18 @@ contains
 
     !> data type for REKS
     type(TReksCalc), allocatable, intent(inout) :: reks
+
+    !> square overlap matrix between basis functions, both triangles required
+    real(dp), intent(in)  :: SSqrReal(:,:)
+
+    !> dense real hamiltonian storage
+    real(dp), intent(in)  :: HSqrReal(:,:,:)
+
+    !> occupations (level, kpoint, spin)
+    real(dp), intent(in)  :: filling(:,:)
+
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
 
     real(dp), allocatable :: tmpHamSp(:,:)
     real(dp), allocatable :: tmpEn(:)
