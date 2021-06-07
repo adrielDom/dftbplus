@@ -7086,7 +7086,7 @@ contains
           & neighbourList, nNeighbourSk, img2CentCell, iSparseStart, cellVol, extPressure, TS,&
           & potential, energy, thirdOrd, solvation, rangeSep, reks, qDepExtPot, qBlock, qiBlock,&
           & xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
-          & denseDesc%iAtomStart, SSqrReal, HSqrReal, filling, LOs)
+          & denseDesc%iAtomStart, SSqrReal, HSqrReal, filling, LOSC)
       call sumEnergies(energy)
 
       ! Assign energy contribution of each microstate

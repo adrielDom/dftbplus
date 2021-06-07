@@ -100,7 +100,7 @@ contains
 
 
   subroutine getOrbitallets(uu, ener, nNeighbor, iNeighbor, img2CentCell, ind,&
-      & S, cc, filling, rat)
+      & S, cc, filling, rat, LOSC)
     real(dp), intent(out) :: uu(:,:)
     real(dp), intent(in) :: ener(:)
     integer, intent(in)   :: nNeighbor(:)
@@ -110,6 +110,8 @@ contains
     real(dp), intent(in)  :: S(:,:), cc(:,:,:)
     real(dp), intent(in)  :: filling(:,:)
     real(dp), intent(in)  :: rat(:,:)
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
 
     logical :: tFconverged
     integer :: pp, ss, qq, rr, ii, iFloop, nFloop
@@ -120,6 +122,8 @@ contains
     real (dp) :: fqr, f_der1, f_der2, fqr_tmp, F, F_new
     real (dp) :: phi(20), phi_new, phi_tmp, delta_phi
     real (dp), allocatable :: norm(:), U_tmp(:)
+
+    @:ASSERT(allocated(LOSC))
 
     nOrb = size(uu, dim=2)
     ALLOCATE_(norm, (nOrb))
@@ -168,8 +172,8 @@ contains
           D2 = 0.0_dp
           do ss = 1, nOrb
 
-            wqs = penalty(abs(ener(qq)-ener(ss)))
-            wrs = penalty(abs(ener(rr)-ener(ss)))
+            wqs = penalty(abs(ener(qq)-ener(ss)),LOSC)
+            wrs = penalty(abs(ener(rr)-ener(ss)),LOSC)
 
             D0 = D0 + 0.5 * (wqs + wrs) * (uu(qq,ss)**2 + uu(rr,ss)**2)
             D1 = D1 + (wqs - wrs) * uu(qq,ss) * uu(rr,ss)
@@ -233,18 +237,19 @@ contains
 
   contains
 
-    function penalty(x) result(w)
+    function penalty(x,losc) result(w)
       real(dp), intent(in) :: x
+      type(TLOSCorrection), intent(in) :: losc
       real(dp) :: w
 
       real(dp) :: ener_frac, tmp
       real(dp) :: R0, eps0, gamma, eta
 
       ! parameters of the penalty function
-      R0 = 5.1_dp !Bohr (2.7 AA)
-      eps0 = 0.92_dp !Hartree (2.5 eV)
-      gamma = 2.0_dp
-      eta = 3.0_dp
+      R0 = losc%PenaltyParam(1)
+      eps0 = losc%PenaltyParam(2)
+      gamma = losc%PenaltyParam(3)
+      eta = losc%PenaltyParam(4)
 
       ener_frac = x / eps0
       tmp = 1 - exp( -1.0_dp * ener_frac**eta )

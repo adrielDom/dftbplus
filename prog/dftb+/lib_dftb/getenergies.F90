@@ -50,7 +50,7 @@ contains
       & tDualSpinOrbit, rhoPrim, H0, orb, neighbourList, nNeighbourSK, img2CentCell, iSparseStart,&
       & cellVol, extPressure, TS, potential, energy, thirdOrd, solvation, rangeSep, reks,&
       & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
-      & iAtomStart, SSqrReal, HSqrReal, filling, LOs)
+      & iAtomStart, SSqrReal, HSqrReal, filling, LOSC)
 
     !> SCC module internal variables
     type(TScc), allocatable, intent(in) :: sccCalc
@@ -164,8 +164,8 @@ contains
     !> occupations (level, kpoint, spin)
     real(dp), intent(in)  :: filling(:,:)
 
-    !> Coefficients of LOs (orbitallets) in the CO basis (LO index, CO index)
-    real(dp), intent(in)  :: LOs(:,:)
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
 
     integer :: nSpin
     real(dp) :: nEl(2)
@@ -222,9 +222,9 @@ contains
       energy%eOnSite = sum(energy%atomOnSite)
     end if
 
-    if (allocated(LOs)) then
+    if (allocated(LOSC)) then
       call getOrbitallets(LOs, eigen(:,1,1), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
-          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), coord0)
+          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), coord0, LOSC)
       call getElosc(energy%atomLosc, nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
           & iAtomStart, SSqrReal, HSqrReal, filling(:,:), LOs)
       energy%elosc = sum(energy%atomLosc)
