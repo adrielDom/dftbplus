@@ -1962,6 +1962,10 @@ contains
       end if
     #:endfor
 
+      call move_alloc(input%ctrl%ppRPA, this%ppRPA)
+
+    end if
+
     ! Dispersion
     tHHRepulsion = .false.
     if (allocated(input%ctrl%dispInp)) then
