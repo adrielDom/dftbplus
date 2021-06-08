@@ -333,7 +333,7 @@ contains
           & this%qDepExtPot, this%dftbU, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%coord,&
           & this%onsiteElements, this%skHamCont, this%skOverCont, this%latVec, this%invLatVec,&
           & this%iCellVec, this%rCellVec, this%cellVec, this%electronicSolver, this%eigvecsCplx,&
-          & this%taggedWriter, this%refExtPot, this%SSqrReal, this%HSqrReal, this%eigen, this%LOSC)
+          & this%taggedWriter, this%refExtPot, this%SSqrReal, this%eigvecsReal, this%eigen, this%LOSC)
     end if
 
   #:if WITH_TRANSPORT
@@ -726,7 +726,7 @@ contains
             & this%isXlbomd, this%dftbU, this%dftbEnergy(1)%TS, this%qDepExtPot, this %qBlockOut,&
             & this%qiBlockOut, this%tFixEf, this%Ef, this%rhoPrim, this%onSiteElements, this%iHam,&
             & this%dispersion, this%reks,&
-            & this%SSqrReal, this%HSqrReal, this%eigen, this%filling, this%coord0, this%LOSC)
+            & this%SSqrReal, this%eigvecsReal, this%eigen, this%filling, this%coord0, this%LOSC)
 
         call optimizeFONsAndWeights(this%eigvecsReal, this%filling, this%dftbEnergy(1), this%reks)
 
@@ -960,8 +960,8 @@ contains
             & this%dftbEnergy(this%deltaDftb%iDeterminant), this%thirdOrd, this%solvation,&
             & this%rangeSep, this%reks, this%qDepExtPot, this%qBlockOut, this%qiBlockOut,&
             & this%xi, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%onSiteElements,&
-            & this%denseDesc%iAtomStart, this%SSqrReal, this%HSqrReal, this%eigen,&
-            & this%filling, this%coord0, this%LOSC)
+            & this%denseDesc%iAtomStart, this%SSqrReal, this%eigvecsReal, this%eigen,&
+            & this%filling(:,1,:), this%coord0, this%LOSC)
 
         tStopScc = hasStopFile(fStopScc)
 
@@ -6961,10 +6961,10 @@ contains
     real(dp), intent(in) :: MOener(:,:,:)
 
     !> occupations (level, kpoint, spin)
-    real(dp), intent(in)  :: filling(:,:)
+    real(dp), intent(in)  :: filling(:,:,:)
 
     !> atomic coordinates (axis, atom)
-    real(dp), intent(in)  :: coord0(:,:)
+    real(dp), intent(in)  :: coord(:,:)
 
     !> Container for LOSC calculation data
     type(TLOSCorrection), allocatable, intent(in) :: LOSC
@@ -7109,7 +7109,7 @@ contains
           & neighbourList, nNeighbourSk, img2CentCell, iSparseStart, cellVol, extPressure, TS,&
           & potential, energy, thirdOrd, solvation, rangeSep, reks, qDepExtPot, qBlock, qiBlock,&
           & xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
-          & denseDesc%iAtomStart, SSqrReal, HSqrReal, MOener, filling, coord0, LOSC)
+          & denseDesc%iAtomStart, SSqrReal, HSqrReal, MOener, filling(:,1,:), coord, LOSC)
       call sumEnergies(energy)
 
       ! Assign energy contribution of each microstate

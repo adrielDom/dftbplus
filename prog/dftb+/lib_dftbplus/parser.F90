@@ -1587,19 +1587,18 @@ contains
     if (associated(value1)) then
       allocate(ctrl%losc)
 
-      call getChildValue(child, "PenaltyFunction", value2, "Yang2017", child=child)
-      call getNodeName(value2, buffer)
+      call getChildValue(child, "PenaltyFunction", value1, "Yang2017", child=child)
+      call getNodeName(value1, buffer)
+
       select case(char(buffer))
-
       case ("Yang2017")
-
         ctrl%losc%penalty = "Yang2017"
         allocate(ctrl%losc%PenaltyParam(4))
-        call getChildValue(value2, "Radius", ctrl%losc%PenaltyParam(1), 5.1_dp)
-        call getChildValue(value2, "EnergyWindow", ctrl%losc%PenaltyParam(2), 0.092_dp)
-        call getChildValue(value2, "gamma", ctrl%losc%PenaltyParam(3), 2.0_dp)
-        call getChildValue(value2, "eta", ctrl%losc%PenaltyParam(4), 3.0_dp)
-
+        call getChildValue(value1, "Radius", ctrl%losc%PenaltyParam(1), 5.1_dp)
+        call getChildValue(value1, "EnergyWindow", ctrl%losc%PenaltyParam(2), 0.092_dp)
+        call getChildValue(value1, "gamma", ctrl%losc%PenaltyParam(3), 2.0_dp)
+        call getChildValue(value1, "eta", ctrl%losc%PenaltyParam(4), 3.0_dp)
+      end select
 
       call getChildValue(child, "SelfConsistentCalculation", ctrl%losc%tSCF, default=.false.)
     end if
