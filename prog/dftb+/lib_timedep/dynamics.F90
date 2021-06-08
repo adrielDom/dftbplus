@@ -64,6 +64,7 @@ module dftbp_timeprop
   use dftbp_RangeSeparated, only : TRangeSepFunc
   use dftbp_qdepextpotproxy, only : TQDepExtPotProxy
   use dftbp_reks, only : TReksCalc
+  use dftbp_loscorrection, only : TLOSCorrection
   implicit none
   private
 
@@ -545,7 +546,7 @@ contains
       & spinW, pRepCont, sccCalc, env, tDualSpinOrbit, xi, thirdOrd, solvation, rangeSep,&
       & qDepExtPot, dftbU, iAtInCentralRegion, tFixEf, Ef, coordAll, onSiteElements, skHamCont,&
       & skOverCont, latVec, invLatVec, iCellVec, rCellVec, cellVec, electronicSolver, eigvecsCplx,&
-      & taggedWriter, refExtPot)
+      & taggedWriter, refExtPot, SSqrReal, HSqrReal, eigen, LOSC)
 
     !> ElecDynamics instance
     type(TElecDynamics) :: this
@@ -676,6 +677,18 @@ contains
     !> Reference external potential (usual provided via API)
     type(TRefExtPot) :: refExtPot
 
+    !> square overlap matrix between basis functions, both triangles required
+    real(dp), intent(in)  :: SSqrReal(:,:)
+
+    !> dense real hamiltonian storage
+    real(dp), intent(in)  :: HSqrReal(:,:,:)
+
+    !> ground state eigenvalues (level, kpoint, spin)
+    real(dp), intent(in) :: eigen(:,:,:)
+
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
+
     integer :: iPol, iCall
     logical :: tWriteAutotest
 
@@ -717,7 +730,8 @@ contains
             & nNeighbourSK, nNeighbourLC, iSquare, iSparseStart, img2CentCell, orb, coord, spinW,&
             & pRepCont, env, tDualSpinOrbit, xi, thirdOrd, solvation, rangeSep, qDepExtPot,&
             & dftbU, iAtInCentralRegion, tFixEf, Ef, tWriteAutotest, coordAll, onSiteElements,&
-            & skHamCont, skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot)
+            & skHamCont, skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot,&
+            & SSqrReal, HSqrReal, eigen, LOSC)
         iCall = iCall + 1
       end do
     else
@@ -725,7 +739,8 @@ contains
           & nNeighbourSK, nNeighbourLC, iSquare, iSparseStart, img2CentCell, orb, coord, spinW,&
           & pRepCont, env, tDualSpinOrbit, xi, thirdOrd, solvation, rangeSep, qDepExtPot,&
           & dftbU, iAtInCentralRegion, tFixEf, Ef, tWriteAutotest, coordAll, onSiteElements,&
-          & skHamCont, skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot)
+          & skHamCont, skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot,&
+          & SSqrReal, HSqrReal, eigen, LOSC)
     end if
 
   end subroutine runDynamics
@@ -736,7 +751,8 @@ contains
       & nNeighbourSK, nNeighbourLC, iSquare, iSparseStart, img2CentCell, orb, coord, spinW,&
       & pRepCont, env, tDualSpinOrbit, xi, thirdOrd, solvation, rangeSep, qDepExtPot, dftbU,&
       & iAtInCentralRegion, tFixEf, Ef, tWriteAutotest, coordAll, onSiteElements, skHamCont,&
-      & skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot)
+      & skOverCont, iCall, electronicSolver, eigvecsCplx, taggedWriter, refExtPot,&
+      & SSqrReal, HSqrReal, eigen, LOSC)
 
     !> ElecDynamics instance
     type(TElecDynamics) :: this
@@ -855,6 +871,18 @@ contains
 
     !> Reference external potential (usual provided via API)
     type(TRefExtPot) :: refExtPot
+
+    !> square overlap matrix between basis functions, both triangles required
+    real(dp), intent(in)  :: SSqrReal(:,:)
+
+    !> dense real hamiltonian storage
+    real(dp), intent(in)  :: HSqrReal(:,:,:)
+
+    !> ground state eigenvalues (level, kpoint, spin)
+    real(dp), intent(in) :: eigen(:,:,:)
+
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
 
     complex(dp), allocatable :: Ssqr(:,:,:)
     complex(dp), allocatable :: Sinv(:,:,:)
@@ -987,7 +1015,8 @@ contains
     call getTDEnergy(this, energy, rhoPrim, trhoOld, neighbourList, nNeighbourSK, orb,&
         & iSquare, iSparseStart, img2CentCell, ham0, qq, q0, potential, chargePerShell,&
         & energyKin, tDualSpinOrbit, thirdOrd, solvation, rangeSep, qDepExtPot, qBlock,&
-        & dftbU, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+        & dftbU, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+        & coord, filling, SSqrReal, HSqrReal, eigen, LOSC)
 
     ! after calculating the TD function, set initial time to zero for probe simulations
     ! this is to properly calculate the dipole fourier transform after the simulation
@@ -1090,7 +1119,8 @@ contains
       call getTDEnergy(this, energy, rhoPrim, rho, neighbourList, nNeighbourSK, orb, iSquare,&
           & iSparseStart, img2CentCell, ham0, qq, q0, potential, chargePerShell, energyKin,&
           & tDualSpinOrbit, thirdOrd, solvation, rangeSep, qDepExtPot, qBlock, dftbU, xi,&
-          & iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+          & iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+          & coord, filling, SSqrReal, HSqrReal, eigen, LOSC)
 
       if ((mod(iStep, this%writeFreq) == 0)) then
         call getBondPopulAndEnergy(this, bondWork, lastBondPopul, rhoPrim, ham0, over,&
@@ -1622,7 +1652,8 @@ contains
   subroutine getTDEnergy(this, energy, rhoPrim, rho, neighbourList, nNeighbourSK, orb, iSquare,&
       & iSparseStart, img2CentCell, ham0, qq, q0, potential, chargePerShell, energyKin,&
       & tDualSpinOrbit, thirdOrd, solvation, rangeSep, qDepExtPot, qBlock, dftbU, xi,&
-      & iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+      & iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+      & coord, filling, SSqrReal, HSqrReal, eigen, LOSC)
 
     !> ElecDynamics instance
     type(TElecDynamics), intent(inout) :: this
@@ -1709,6 +1740,24 @@ contains
     !> Corrections terms for on-site elements
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
+    !> atomic coordinates (axis, atom)
+    real(dp), intent(in)  :: coord(:,:)
+
+    !> occupations (level, kpoint, spin)
+    real(dp), intent(in)  :: filling(:,:,:)
+
+    !> square overlap matrix between basis functions, both triangles required
+    real(dp), intent(in)  :: SSqrReal(:,:)
+
+    !> dense real hamiltonian storage
+    real(dp), intent(in)  :: HSqrReal(:,:,:)
+
+    !> ground state eigenvalues (level, kpoint, spin)
+    real(dp), intent(in) :: eigen(:,:,:)
+
+    !> Container for LOSC calculation data
+    type(TLOSCorrection), allocatable, intent(in) :: LOSC
+
     real(dp), allocatable :: qiBlock(:,:,:,:) ! never allocated
     integer :: iKS, iK, iSpin
     real(dp) :: TS(this%nSpin)
@@ -1737,7 +1786,8 @@ contains
     call calcEnergies(this%sccCalc, qq, q0, chargePerShell, this%speciesAll, this%tLaser, .false.,&
         & dftbU, tDualSpinOrbit, rhoPrim, ham0, orb, neighbourList, nNeighbourSK, img2CentCell,&
         & iSparseStart, 0.0_dp, 0.0_dp, TS, potential, energy, thirdOrd, solvation, rangeSep, reks,&
-        & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements)
+        & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
+        & iSquare, SSqrReal, HSqrReal, eigen, filling(:,1,:), coord, LOSC)
     call sumEnergies(energy)
     ! calcEnergies then sumEnergies returns the total energy Etotal including repulsive and
     ! dispersions energies

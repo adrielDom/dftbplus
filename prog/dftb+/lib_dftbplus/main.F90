@@ -333,7 +333,7 @@ contains
           & this%qDepExtPot, this%dftbU, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%coord,&
           & this%onsiteElements, this%skHamCont, this%skOverCont, this%latVec, this%invLatVec,&
           & this%iCellVec, this%rCellVec, this%cellVec, this%electronicSolver, this%eigvecsCplx,&
-          & this%taggedWriter, this%refExtPot)
+          & this%taggedWriter, this%refExtPot, this%SSqrReal, this%HSqrReal, this%eigen, this%LOSC)
     end if
 
   #:if WITH_TRANSPORT
