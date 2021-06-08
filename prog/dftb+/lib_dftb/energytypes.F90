@@ -69,6 +69,9 @@ module dftbp_energytypes
     !> Onsite correction energy
     real(dp) :: eOnSite = 0.0_dp
 
+    !> Localised orbital scaling correction energy
+    real(dp) :: elosc = 0.0_dp
+
     !> Halogen-X correction energy
     real(dp) :: eHalogenX = 0.0_dp
 
@@ -137,6 +140,9 @@ module dftbp_energytypes
     !> atom onsite correction energies
     real(dp), allocatable :: atomOnSite(:)
 
+    !> atom LOSC energies
+    real(dp), allocatable :: atomLosc(:)
+
     !> atom halogen bond correction energies
     real(dp), allocatable :: atomHalogenX(:)
 
@@ -188,6 +194,7 @@ contains
     allocate(this%atomElec(nAtom))
     allocate(this%atomDisp(nAtom))
     allocate(this%atomOnSite(nAtom))
+    allocate(this%atomLosc(nAtom))
     allocate(this%atomHalogenX(nAtom))
     allocate(this%atom3rd(nAtom))
     allocate(this%atomSolv(nAtom))
@@ -202,6 +209,7 @@ contains
     this%atomElec(:) = 0.0_dp
     this%atomDisp(:) = 0.0_dp
     this%atomOnSite(:) = 0.0_dp
+    this%atomLosc(:) = 0.0_dp
     this%atomHalogenX(:) = 0.0_dp
     this%atom3rd(:) = 0.0_dp
     this%atomSolv(:) = 0.0_dp
@@ -218,6 +226,7 @@ contains
     this%Eelec = 0.0_dp
     this%EDisp = 0.0_dp
     this%EOnSite = 0.0_dp
+    this%ELOSC = 0.0_dp
     this%EHalogenX = 0.0_dp
     this%E3rd = 0.0_dp
     this%ESolv = 0.0_dp

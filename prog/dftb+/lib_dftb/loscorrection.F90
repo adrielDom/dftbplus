@@ -5,15 +5,17 @@
 !  See the LICENSE file for terms of usage and distribution.                                       !
 !--------------------------------------------------------------------------------------------------!
 
+#:include 'common.fypp'
+#:include 'error.fypp'
+
 module dftbp_loscorrection
-# include "assert.h"
-# include "allocate.h"
-  use Accuracy
-  use CommonTypes
-  use Message
-  use BlasRoutines
-  use SCC, only : getAtomicGammaMatrix
-  use LinearResponseCommon, only : transq
+  use dftbp_assert
+  use dftbp_accuracy
+  use dftbp_commontypes
+  use dftbp_message
+  use dftbp_blasroutines
+  use dftbp_scc, only : TScc
+  use dftbp_transcharges, only : transq
   implicit none
   public
 
@@ -33,10 +35,16 @@ module dftbp_loscorrection
 
 contains
 
-  !> Get the LOSC term of total energy
-  subroutine getElosc(e_losc, nNeighbor, iNeighbor, img2CentCell, ind,&
+  !> This subroutine calculates the LO scaling correction term of total energy
+  subroutine getElosc(e_losc, sccCalc, nNeighbor, iNeighbor, img2CentCell, ind,&
       & S, cc, filling, uu)
+
+    !> LOSC energy (output)
     real(dp), intent(out) :: e_losc(:)
+
+    !> Self-consistent charge module settings
+    type(TScc), intent(in) :: sccCalc
+
     integer,  intent(in)  :: nNeighbor(:)
     integer,  intent(in)  :: iNeighbor(0:,:)
     integer,  intent(in)  :: img2CentCell(:)
@@ -55,11 +63,11 @@ contains
 
     nAtom = size(e_losc)
 
-    ALLOCATE_(gamma, (nAtom, nAtom))
-    ALLOCATE_(lambdaQQ, (nAtom, nAtom))
-    ALLOCATE_(lambdaSqrQQ, (nAtom, nAtom))
+    allocate(gamma(nAtom, nAtom))
+    allocate(lambdaQQ(nAtom, nAtom))
+    allocate(lambdaSqrQQ(nAtom, nAtom))
 
-    ALLOCATE_(occNr, (size(filling,dim=1)))
+    allocate(occNr(size(filling,dim=1)))
     occNr = real(filling(:,1), 4)
 
     e_losc = 0.0_dp
@@ -67,7 +75,7 @@ contains
     term1 = 0.0_dp
     term2 = 0.0_dp
 
-    call getAtomicGammaMatrix(gamma, iNeighbor, img2CentCell)
+    call sccCalc%getAtomicGammaMatrix(gamma, iNeighbor, img2CentCell)
     call getlambdaQQ(lambdaQQ,uu,ind,S,cc,occNr,nNeighbor,iNeighbor,img2CentCell)
     call getlambdaSqrQQ(lambdaSqrQQ,uu,ind,S,cc,occNr,nNeighbor,iNeighbor,img2CentCell)
 
@@ -80,7 +88,7 @@ contains
         rTmp = gamma(iAt1,iAt2) * lambdaQQ(iAt1,iAt2)&
             & - gamma(iAt1,iAt2) * lambdaSqrQQ(iAt1,iAt2)
 
-! term1 and term2 just for debugging purposes
+! term1 and term2 just for debugging
         term1 = term1 + 0.5_dp * gamma(iAt1,iAt2) * lambdaQQ(iAt1,iAt2)
         term2 = term2 + 0.5_dp * gamma(iAt1,iAt2) * lambdaSqrQQ(iAt1,iAt2)
 
@@ -126,8 +134,8 @@ contains
     @:ASSERT(allocated(LOSC))
 
     nOrb = size(uu, dim=2)
-    ALLOCATE_(norm, (nOrb))
-    ALLOCATE_(U_tmp, (nOrb))
+    allocate(norm(nOrb))
+    allocate(U_tmp(nOrb))
     tFconverged = .false.
     nFloop = 100
     uu = 0.0_dp
@@ -329,12 +337,12 @@ contains
 
     nOrb = size(cc, dim=1)
     nAtom = size(X_A, dim=2)
-    ALLOCATE_(stimc, (norb, norb, 2))
-    ALLOCATE_(qst, (nAtom))
-    ALLOCATE_(R_A, (nAtom))
+    allocate(stimc(norb, norb, 2))
+    allocate(qst(nAtom))
+    allocate(R_A(nAtom))
 
     call symm(stimc(:,:,1), "L", S, cc(:,:,1), "U")
-    call transq(ss, tt, ind, .true., stimc, cc, qst)
+    qst(:) = transq(ss, tt, ind, .true., stimc, cc)
     R_A(:) = sqrt(sum(X_A**2, dim=1))
 
     d_st = 0.0_dp
@@ -359,12 +367,12 @@ contains
 
     nOrb = size(cc, dim=1)
     nAtom = size(X_A, dim=2)
-    ALLOCATE_(stimc, (norb, norb, 2))
-    ALLOCATE_(qst, (nAtom))
-    ALLOCATE_(R_ASqr, (nAtom))
+    allocate(stimc(norb, norb, 2))
+    allocate(qst(nAtom))
+    allocate(R_ASqr(nAtom))
 
     call symm(stimc(:,:,1), "L", S, cc(:,:,1), "U")
-    call transq(ss, tt, ind, .true., stimc, cc, qst)
+    qst(:) = transq(ss, tt, ind, .true., stimc, cc)
     R_ASqr(:) = sum(X_A**2, dim=1)
 !    d2_st = matmul(R_ASqr,qst)
     d2_st = 0.0_dp
@@ -417,8 +425,8 @@ contains
 
     nOrb = size(uu, dim=2)
     nAtom = size(Q)
-    ALLOCATE_(stimc, (norb, norb, 2))
-    ALLOCATE_(qst, (nAtom))
+    allocate(stimc(norb, norb, 2))
+    allocate(qst(nAtom))
 
     Q = 0.0_dp
 
@@ -430,7 +438,7 @@ contains
 
       do ss = 1, nOrb
         do tt = 1, nOrb
-          call transq(ss, tt, ind, .true., stimc, cc, qst)
+          qst(:) = transq(ss, tt, ind, .true., stimc, cc)
           Q(iAt) = Q(iAt) + uu(pp,ss) * uu(pp,tt) * qst(iAt)
 
           print *, "s,t", ss, tt
@@ -462,7 +470,7 @@ contains
     nAtom = size(lambdaQQ, dim=1)
     nOrb  = size(occNr)
 
-    ALLOCATE_(Q, (nAtom))
+    allocate(Q(nAtom))
 
     do iAt1 = 1, nAtom
       do iNeigh = 0, nNeighbor(iAt1)
@@ -512,8 +520,8 @@ contains
     nAtom = size(lambdaSqrQQ, dim=1)
     nOrb  = size(occNr)
 
-    ALLOCATE_(Q_p, (nAtom))
-    ALLOCATE_(Q_q, (nAtom))
+    allocate(Q_p(nAtom))
+    allocate(Q_q(nAtom))
 
     do iAt1 = 1, nAtom
       do iNeigh = 0, nNeighbor(iAt1)

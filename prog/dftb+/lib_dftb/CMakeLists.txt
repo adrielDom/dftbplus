@@ -59,7 +59,8 @@ set(sources-fpp
   ${curdir}/stress.F90
   ${curdir}/thirdorder.F90
   ${curdir}/uniquehubbard.F90
-  ${curdir}/vdwdata.F90)
+  ${curdir}/vdwdata.F90
+  ${curdir}/loscorrection.F90)
 
 if(WITH_DFTD3)
   list(APPEND sources-fpp ${curdir}/dispdftd3.F90)

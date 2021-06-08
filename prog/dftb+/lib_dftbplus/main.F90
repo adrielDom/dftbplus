@@ -725,7 +725,9 @@ contains
             & this%rangeSep, this%nNeighbourLC, this%tDualSpinOrbit, this%xi, this %tExtField,&
             & this%isXlbomd, this%dftbU, this%dftbEnergy(1)%TS, this%qDepExtPot, this %qBlockOut,&
             & this%qiBlockOut, this%tFixEf, this%Ef, this%rhoPrim, this%onSiteElements, this%iHam,&
-            & this%dispersion, this%reks, this%SSqrReal, this%HSqrReal, this%filling, this%LOSC)
+            & this%dispersion, this%reks,&
+            & this%SSqrReal, this%HSqrReal, this%eigen, this%filling, this%coord0, this%LOSC)
+
         call optimizeFONsAndWeights(this%eigvecsReal, this%filling, this%dftbEnergy(1), this%reks)
 
         call getFockandDiag(env, this%denseDesc, this%neighbourList, this%nNeighbourSK,&
@@ -958,7 +960,8 @@ contains
             & this%dftbEnergy(this%deltaDftb%iDeterminant), this%thirdOrd, this%solvation,&
             & this%rangeSep, this%reks, this%qDepExtPot, this%qBlockOut, this%qiBlockOut,&
             & this%xi, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%onSiteElements,&
-            & this%denseDesc%iAtomStart, this%SSqrReal, this%HSqrReal, this%filling, this%LOSC)
+            & this%denseDesc%iAtomStart, this%SSqrReal, this%HSqrReal, this%eigen,&
+            & this%filling, this%coord0, this%LOSC)
 
         tStopScc = hasStopFile(fStopScc)
 
@@ -6831,7 +6834,7 @@ contains
       & energy, q0, iAtInCentralRegion, solvation, thirdOrd, potential, rangeSep, nNeighbourLC,&
       & tDualSpinOrbit, xi, tExtField, isXlbomd, dftbU, TS, qDepExtPot, qBlock, qiBlock,&
       & tFixEf, Ef, rhoPrim, onSiteElements, iHam, dispersion, reks,&
-      & SSqrReal, HSqrReal, filling, LOSC)
+      & SSqrReal, HSqrReal, MOener, filling, coord, LOSC)
 
     !> Environment settings
     type(TEnvironment), intent(inout) :: env
@@ -6954,8 +6957,14 @@ contains
     !> dense real hamiltonian storage
     real(dp), intent(in)  :: HSqrReal(:,:,:)
 
+    !> MO energies
+    real(dp), intent(in) :: MOener(:,:,:)
+
     !> occupations (level, kpoint, spin)
     real(dp), intent(in)  :: filling(:,:)
+
+    !> atomic coordinates (axis, atom)
+    real(dp), intent(in)  :: coord0(:,:)
 
     !> Container for LOSC calculation data
     type(TLOSCorrection), allocatable, intent(in) :: LOSC
@@ -7100,7 +7109,7 @@ contains
           & neighbourList, nNeighbourSk, img2CentCell, iSparseStart, cellVol, extPressure, TS,&
           & potential, energy, thirdOrd, solvation, rangeSep, reks, qDepExtPot, qBlock, qiBlock,&
           & xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
-          & denseDesc%iAtomStart, SSqrReal, HSqrReal, filling, LOSC)
+          & denseDesc%iAtomStart, SSqrReal, HSqrReal, MOener, filling, coord0, LOSC)
       call sumEnergies(energy)
 
       ! Assign energy contribution of each microstate

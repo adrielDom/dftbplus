@@ -50,7 +50,7 @@ contains
       & tDualSpinOrbit, rhoPrim, H0, orb, neighbourList, nNeighbourSK, img2CentCell, iSparseStart,&
       & cellVol, extPressure, TS, potential, energy, thirdOrd, solvation, rangeSep, reks,&
       & qDepExtPot, qBlock, qiBlock, xi, iAtInCentralRegion, tFixEf, Ef, onSiteElements,&
-      & iAtomStart, SSqrReal, HSqrReal, filling, LOSC)
+      & iAtomStart, SSqrReal, HSqrReal, eigen, filling, coord0, LOSC)
 
     !> SCC module internal variables
     type(TScc), allocatable, intent(in) :: sccCalc
@@ -153,7 +153,7 @@ contains
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
     !> Start of atomic blocks in dense arrays
-    integer,  intent(in)  :: iAtomStart
+    integer,  intent(in)  :: iAtomStart(:)
 
     !> square overlap matrix between basis functions, both triangles required
     real(dp), intent(in)  :: SSqrReal(:,:)
@@ -161,16 +161,26 @@ contains
     !> dense real hamiltonian storage
     real(dp), intent(in)  :: HSqrReal(:,:,:)
 
+    !> ground state eigenvalues (level, kpoint, spin)
+    real(dp), intent(in) :: eigen(:,:,:)
+
     !> occupations (level, kpoint, spin)
     real(dp), intent(in)  :: filling(:,:)
+
+    !> atomic coordinates (axis, atom)
+    real(dp), intent(in)  :: coord0(:,:)
 
     !> Container for LOSC calculation data
     type(TLOSCorrection), allocatable, intent(in) :: LOSC
 
-    integer :: nSpin
+    integer :: nSpin, nOrb
     real(dp) :: nEl(2)
+    real(dp), allocatable :: orbitallets(:,:)
 
     nSpin = size(qOrb, dim=3)
+    nOrb = size(eigen, dim=1)
+    allocate(orbitallets(nOrb,nOrb))
+
 
     ! Tr[H0 * Rho] can be done with the same algorithm as Mulliken-analysis
     energy%atomNonSCC(:) = 0.0_dp
@@ -223,10 +233,10 @@ contains
     end if
 
     if (allocated(LOSC)) then
-      call getOrbitallets(LOs, eigen(:,1,1), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
+      call getOrbitallets(orbitallets, eigen(:,1,1), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
           & iAtomStart, SSqrReal, HSqrReal, filling(:,:), coord0, LOSC)
-      call getElosc(energy%atomLosc, nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
-          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), LOs)
+      call getElosc(energy%atomLosc, sccCalc, nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
+          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), orbitallets)
       energy%elosc = sum(energy%atomLosc)
     end if
 
