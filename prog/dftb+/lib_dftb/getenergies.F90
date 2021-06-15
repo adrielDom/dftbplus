@@ -175,11 +175,11 @@ contains
 
     integer :: nSpin, nOrb
     real(dp) :: nEl(2)
-    real(dp), allocatable :: orbitallets(:,:)
+    real(dp), allocatable :: orbitallets(:,:,:)
 
     nSpin = size(qOrb, dim=3)
     nOrb = size(eigen, dim=1)
-    allocate(orbitallets(nOrb,nOrb))
+    allocate(orbitallets(nOrb,nOrb,nSpin))
 
 
     ! Tr[H0 * Rho] can be done with the same algorithm as Mulliken-analysis
@@ -233,10 +233,10 @@ contains
     end if
 
     if (allocated(LOSC)) then
-      call getOrbitallets(orbitallets, eigen(:,1,1), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
-          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), coord0, LOSC)
+      call getOrbitallets(orbitallets, eigen(:,1,:), nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
+          & iAtomStart, SSqrReal, HSqrReal, filling, coord0, LOSC)
       call getElosc(energy%atomLosc, sccCalc, nNeighbourSK, neighbourList%iNeighbour, img2CentCell,&
-          & iAtomStart, SSqrReal, HSqrReal, filling(:,:), orbitallets)
+          & iAtomStart, SSqrReal, HSqrReal, filling, orbitallets, species, LOSC)
       energy%elosc = sum(energy%atomLosc)
     end if
 

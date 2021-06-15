@@ -1964,6 +1964,16 @@ contains
 
       call move_alloc(input%ctrl%ppRPA, this%ppRPA)
 
+      if (this%tSpin) then
+        allocate(input%ctrl%losc%spinW(this%nType))
+        input%ctrl%losc%spinW(:) = 0.0_dp
+        do iSp = 1, this%nType
+          homoLoc = maxloc(this%atomEigVal(:this%orb%nShell(iSp), iSp),&
+              & mask=this%referenceN0(:this%orb%nShell(iSp), iSp) > 0.0_dp)
+          input%ctrl%losc%spinW(iSp) = this%spinW(homoLoc(1), homoLoc(1), iSp)
+        end do
+      end if
+
     end if
 
     ! Dispersion
